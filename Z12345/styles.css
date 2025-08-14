@@ -1,0 +1,481 @@
+/* Simplified Agent Activity Report Styles */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #79a5d1;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Header Styles */
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  color: white;
+}
+
+.headingg {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #2c3e50;
+}
+
+/* Report Header */
+.report-header {
+  padding: 1rem;
+}
+
+.header-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.header-item {
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-item strong {
+  color: #2c3e50;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-item span {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Form Styles */
+.box {
+  padding: 1rem;
+  margin: 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+/* Button Styles */
+.btn-primary, .button.is-link.is-light {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary:hover, .button.is-link.is-light:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Loading Styles */
+#loading {
+  text-align: center;
+  padding: 3rem;
+  background: #f8f9fa;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error Styles */
+#error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #f5c6cb;
+  margin: 1rem 2rem;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+/* Filters Grid */
+#filtersGrid {
+  display: grid;
+  padding: 1rem 2rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Table Container */
+.table-container {
+  padding: 2rem;
+  background: white;
+}
+
+.report-section {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #667eea;
+}
+
+/* Table Styles */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 0.9rem;
+  table-layout: auto;
+  min-width: 1200px;
+}
+
+.report-table thead {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: white !important;
+}
+
+.report-table th {
+  padding: 1rem 0.5rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #34495e;
+  color: white !important;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.report-table th:nth-child(1), /* Agent Name */
+.report-table td:nth-child(1) {
+  width: 15%;
+  text-align: left;
+  padding-left: 1rem;
+}
+
+.report-table th:nth-child(2), /* Extension */
+.report-table td:nth-child(2) {
+  width: 8%;
+  text-align: center;
+}
+
+.report-table th:nth-child(3), /* Total Calls */
+.report-table td:nth-child(3) {
+  width: 8%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-table th:nth-child(4), /* Answered Calls */
+.report-table td:nth-child(4) {
+  width: 8%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-table th:nth-child(5), /* Failed */
+.report-table td:nth-child(5) {
+  width: 8%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-table th:nth-child(6), /* Wrap Up Time */
+.report-table td:nth-child(6) {
+  width: 10%;
+  text-align: center;
+}
+
+.report-table th:nth-child(7), /* Not Available Time */
+.report-table td:nth-child(7) {
+  width: 10%;
+  text-align: center;
+}
+
+.report-table th:nth-child(8), /* Hold Time */
+.report-table td:nth-child(8) {
+  width: 8%;
+  text-align: center;
+}
+
+.report-table th:nth-child(9), /* On Call Time */
+.report-table td:nth-child(9) {
+  width: 10%;
+  text-align: center;
+}
+
+.report-table th:nth-child(10), /* AHT */
+.report-table td:nth-child(10) {
+  width: 8%;
+  text-align: center;
+}
+
+.report-table th:nth-child(11), /* Custom States */
+.report-table td:nth-child(11) {
+  width: 17%;
+  text-align: left;
+  padding-left: 0.5rem;
+}
+
+.report-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.report-table tbody tr:hover {
+  background-color: #e3f2fd;
+}
+
+.report-table td {
+  padding: 1rem 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 1px solid #f1f3f4;
+  vertical-align: top;
+  text-align: center;
+}
+
+.report-table td:last-child {
+  border-right: none;
+}
+
+/* Table Cell Specific Styles */
+.agent-name {
+  font-weight: 600;
+  color: #2c3e50;
+  text-align: left !important;
+  min-width: 150px;
+}
+
+.extension {
+  font-family: 'Courier New', monospace;
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.number {
+  text-align: center;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  color: #2c3e50;
+  min-width: 80px;
+}
+
+.number.answered {
+  color: #28a745;
+}
+
+.number.failed {
+  color: #dc3545;
+}
+
+.duration {
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #495057;
+  min-width: 100px;
+}
+
+.custom-states {
+  max-width: 300px;
+  word-wrap: break-word;
+  text-align: left !important;
+  padding: 0.5rem !important;
+}
+
+/* Custom States Styling */
+.state-block {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.state-block:last-child {
+  margin-bottom: 0;
+}
+
+.no-states {
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+/* Export Section */
+#exportSection {
+  padding: 1rem 2rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .header-row {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .headingg {
+    font-size: 1.5rem;
+  }
+  
+  .header-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .box {
+    padding: 1rem;
+  }
+  
+  .table-container {
+    padding: 1rem;
+  }
+  
+  .report-table {
+    font-size: 0.8rem;
+  }
+  
+  .report-table th,
+  .report-table td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .custom-states {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+  
+  .container {
+    border-radius: 8px;
+  }
+  
+  .header-row {
+    padding: 1rem;
+  }
+  
+  .headingg {
+    font-size: 1.2rem;
+  }
+  
+  .report-table {
+    font-size: 0.75rem;
+  }
+  
+  .custom-states {
+    max-width: 150px;
+  }
+}

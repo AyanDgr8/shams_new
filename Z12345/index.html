@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Agent Activity Report</title>
+  <!-- Favicon so the tab shows the same logo -->
+  <link rel="icon" type="image/png" href="/uploads/MultyLogo.png" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header-row">
+      <img src="/uploads/logo.webp" alt="Logo" width="250" />
+      <h1 class="headingg">Agent Activity By Call Volume and Status Report</h1>
+    </div>
+
+    <!-- Report Header Information -->
+    <div class="report-header" id="reportHeader" style="display: none;">
+      <div class="header-info-grid">
+        <div class="header-item">
+          <strong>Tenant</strong><br>
+          <span id="tenantName">-</span>
+        </div>
+        <div class="header-item">
+          <strong>Start Time</strong><br>
+          <span id="startDateTime">-</span>
+        </div>
+        <div class="header-item">
+          <strong>End Time</strong><br>
+          <span id="endDateTime">-</span>
+        </div>
+        <div class="header-item">
+          <strong>Agent Filter</strong><br>
+          <span id="agentFilter">All Agents</span>
+        </div>
+        <div class="header-item">
+          <strong>Extension Filter</strong><br>
+          <span id="extensionFilter">All Extensions</span>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 1rem;">
+        <button type="button" id="newReportBtn" class="btn-primary">New Report</button>
+      </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="box" id="filtersBox">
+      <form id="filterForm">
+        <div class="form-group" style="display: flex; align-items: center; gap: 1rem;">
+          <label for="tenant" style="margin-bottom: 0; min-width: 60px;">Tenant:</label>
+          <input type="text" id="tenant" name="tenant" value="shams" required readonly style="flex: 1;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="startDateTime">Start Date & Time:</label>
+            <input type="datetime-local" id="startDateTime" name="startDateTime" required>
+            <small>Select date and time using the calendar picker</small>
+          </div>
+          <div class="form-group">
+            <label for="endDateTime">End Date & Time:</label>
+            <input type="datetime-local" id="endDateTime" name="endDateTime" required>
+            <small>Select date and time using the calendar picker</small>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="agentName">Agent Name (Optional):</label>
+            <input type="text" id="agentName" name="agentName" placeholder="e.g., Ayan Khan">
+          </div>
+          <div class="form-group">
+            <label for="extension">Extension (Optional):</label>
+            <input type="text" id="extension" name="extension" placeholder="e.g., 2000">
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 1rem;">
+          <button type="submit" class="btn-primary">Generate Report</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Error Display -->
+    <div id="error" class="is-hidden" style="color: red; margin: 1rem 0;"></div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" style="display: none;">
+      <div class="loading-spinner"></div>
+      <p>Generating report...</p>
+    </div>
+
+    <!-- Filters Section -->
+    <div id="filtersGrid" style="display: none; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+      <div class="form-group">
+        <label for="nameFilter">Filter by Agent Name:</label>
+        <input type="text" id="nameFilter" placeholder="Search agent names...">
+      </div>
+      <div class="form-group">
+        <label for="extFilter">Filter by Extension:</label>
+        <input type="text" id="extFilter" placeholder="Search extensions...">
+      </div>
+    </div>
+
+    <!-- Main Report Table -->
+    <div class="table-container" id="reportContainer" style="display: none;">
+      <div id="reportContent"></div>
+    </div>
+
+    <!-- CSV Export Button -->
+    <div class="buttons mt-4" id="exportSection" style="display: none;">
+      <button id="csvBtn" class="button is-link is-light">Download CSV Report</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    // Debug: Check if we're loading the updated script
+    console.log('🔄 Loading simplified script.js at:', new Date().toISOString());
+  </script>
+  <script src="script.js?v=20250814-1800&t=1723647600"></script>
+</body>
+</html>
