@@ -74,8 +74,15 @@ function formatTimestampDubai(timestamp) {
   } else if (typeof timestamp === 'string') {
     date = new Date(timestamp);
   } else {
-    // Handle both seconds and milliseconds timestamps
-    const timestampMs = timestamp < 946684800000 ? timestamp * 1000 : timestamp;
+    // Handle numeric timestamps properly - check digit length
+    let timestampMs;
+    if (timestamp.toString().length <= 10) {
+      // Unix timestamp in seconds - convert to milliseconds
+      timestampMs = timestamp * 1000;
+    } else {
+      // Already in milliseconds
+      timestampMs = timestamp;
+    }
     date = new Date(timestampMs);
   }
   
@@ -108,8 +115,15 @@ function formatTimeDubai(timestamp) {
   } else if (typeof timestamp === 'string') {
     date = new Date(timestamp);
   } else {
-    // Handle both seconds and milliseconds timestamps
-    const timestampMs = timestamp < 946684800000 ? timestamp * 1000 : timestamp;
+    // Handle numeric timestamps properly - check digit length
+    let timestampMs;
+    if (timestamp.toString().length <= 10) {
+      // Unix timestamp in seconds - convert to milliseconds
+      timestampMs = timestamp * 1000;
+    } else {
+      // Already in milliseconds
+      timestampMs = timestamp;
+    }
     date = new Date(timestampMs);
   }
   
@@ -166,17 +180,17 @@ function setDefaultDubaiTimes() {
 }
 
 /**
- * Convert duration from minutes to HH:MM:SS format
- * @param {number} minutes - Duration in minutes
+ * Convert duration from seconds to HH:MM:SS format
+ * @param {number} seconds - Duration in seconds
  * @returns {string} - Formatted duration string (HH:MM:SS)
  */
-function formatDurationToHHMMSS(minutes) {
-  if (!minutes || minutes === null || minutes === undefined) return '00:00:00';
+function formatDurationToHHMMSS(seconds) {
+  if (!seconds || seconds === null || seconds === undefined) return '00:00:00';
   
-  const totalMinutes = Math.abs(Math.round(minutes));
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  const secs = 0; // Since we only have minutes precision
+  const totalSeconds = Math.abs(Math.round(seconds));
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
   
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
@@ -191,32 +205,26 @@ function formatTimestampToDateAndTime(timestamp) {
     // Handle different timestamp formats
     let date;
     if (typeof timestamp === 'string' && timestamp.includes(':')) {
-      // If it's already a time string like "11:59 AM", parse it with today's date
+      // If it's already a formatted time string like "11:59 AM", we need to add date
       if (timestamp.includes('AM') || timestamp.includes('PM')) {
-        // Parse the time string and combine with today's date
-        const today = new Date();
-        const timeMatch = timestamp.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-        if (timeMatch) {
-          let hours = parseInt(timeMatch[1]);
-          const minutes = parseInt(timeMatch[2]);
-          const period = timeMatch[3].toUpperCase();
-          
-          if (period === 'PM' && hours !== 12) hours += 12;
-          if (period === 'AM' && hours === 12) hours = 0;
-          
-          date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
-        } else {
-          date = new Date(); // Fallback to current time
-        }
+        // This is just a time string - we need to get the actual date from context
+        // For now, return as-is but this should be handled by the calling function
+        return timestamp; // This will be fixed by using proper timestamps
       } else {
-        // Try to parse as time string without AM/PM
-        const today = new Date();
-        const [hours, minutes] = timestamp.split(':');
-        date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes));
+        // Try to parse as ISO string or other date format
+        date = new Date(timestamp);
       }
     } else if (typeof timestamp === 'number') {
-      // Unix timestamp (seconds or milliseconds)
-      date = new Date(timestamp > 1000000000000 ? timestamp : timestamp * 1000);
+      // Handle numeric timestamps properly - check digit length
+      let timestampMs;
+      if (timestamp.toString().length <= 10) {
+        // Unix timestamp in seconds - convert to milliseconds
+        timestampMs = timestamp * 1000;
+      } else {
+        // Already in milliseconds
+        timestampMs = timestamp;
+      }
+      date = new Date(timestampMs);
     } else {
       // Try to parse as date string
       date = new Date(timestamp);
@@ -226,10 +234,11 @@ function formatTimestampToDateAndTime(timestamp) {
       return timestamp; // Return original if can't parse
     }
     
-    // Format to "dd/mm, 11:59 AM"
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const timeString = date.toLocaleTimeString('en-US', { 
+    // Format to "dd/mm, 11:59 AM" using Dubai timezone
+    const day = date.toLocaleString('en-AE', { timeZone: 'Asia/Dubai', day: '2-digit' });
+    const month = date.toLocaleString('en-AE', { timeZone: 'Asia/Dubai', month: '2-digit' });
+    const timeString = date.toLocaleString('en-AE', { 
+      timeZone: 'Asia/Dubai',
       hour: 'numeric', 
       minute: '2-digit', 
       hour12: true 

@@ -62,6 +62,13 @@ app.get('/api/agent-report', async (req, res) => {
     console.log(`✅ Report generated successfully`);
     console.log(`📊 Summary: ${reportData.agents?.length || 0} agents, ${reportData.summary?.totalCalls || 0} total calls`);
 
+    // Set cache-control headers to prevent caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
     res.json(reportData);
   } catch (error) {
     console.error('❌ Error generating simplified agent report:', error);

@@ -24,7 +24,15 @@ const formatTimestampDubai = (timestamp) => {
   } else if (typeof timestamp === 'string') {
     date = new Date(timestamp);
   } else {
-    const timestampMs = timestamp < 946684800000 ? timestamp * 1000 : timestamp;
+    // Handle numeric timestamps properly
+    let timestampMs;
+    if (timestamp.toString().length <= 10) {
+      // Unix timestamp in seconds - convert to milliseconds
+      timestampMs = timestamp * 1000;
+    } else {
+      // Already in milliseconds
+      timestampMs = timestamp;
+    }
     date = new Date(timestampMs);
   }
   
@@ -55,7 +63,15 @@ const formatTimeDubai = (timestamp) => {
   } else if (typeof timestamp === 'string') {
     date = new Date(timestamp);
   } else {
-    const timestampMs = timestamp < 946684800000 ? timestamp * 1000 : timestamp;
+    // Handle numeric timestamps properly
+    let timestampMs;
+    if (timestamp.toString().length <= 10) {
+      // Unix timestamp in seconds - convert to milliseconds
+      timestampMs = timestamp * 1000;
+    } else {
+      // Already in milliseconds
+      timestampMs = timestamp;
+    }
     date = new Date(timestampMs);
   }
   
@@ -143,7 +159,7 @@ async function fetchAgentStatsData(tenant, startDateTime, endDateTime, agentName
 }
 
 /**
- * Fetch agent events data from API
+ * Fetch agent events data from API with improved pagination and date filtering
  */
 async function fetchAgentEventsData(tenant, startDateTime, endDateTime, agentName = null, extension = null) {
   const baseUrl = process.env.BASE_URL || 'https://uc.ira-shams-sj.ucprem.voicemeetme.com:9443';
@@ -152,8 +168,14 @@ async function fetchAgentEventsData(tenant, startDateTime, endDateTime, agentNam
   try {
     console.log(`🔐 Authenticating with tenant: ${tenant}`);
     const token = await getPortalToken(tenant);
+    
+    // Convert to timestamps and add buffer to ensure we don't miss edge cases
     const startTimestamp = Math.floor(new Date(startDateTime).getTime() / 1000);
     const endTimestamp = Math.floor(new Date(endDateTime).getTime() / 1000);
+    
+    // Add 1-hour buffer on each side to account for timezone edge cases
+    const bufferedStartTimestamp = startTimestamp - 3600; // 1 hour before
+    const bufferedEndTimestamp = endTimestamp + 3600; // 1 hour after
     
     const headers = {
       'Authorization': `Bearer ${token}`,
@@ -162,28 +184,25 @@ async function fetchAgentEventsData(tenant, startDateTime, endDateTime, agentNam
     };
     
     console.log(`📡 Fetching events from: ${url}`);
-    console.log(`📅 Time range: ${startTimestamp} to ${endTimestamp}`);
-    
-    // Calculate duration to estimate data size
-    const durationHours = (endTimestamp - startTimestamp) / 3600;
-    console.log(`⏱️ Duration: ${durationHours.toFixed(1)} hours`);
+    console.log(`📅 Requested range: ${startTimestamp} to ${endTimestamp}`);
+    console.log(`📅 API query range (with buffer): ${bufferedStartTimestamp} to ${bufferedEndTimestamp}`);
+    console.log(`📅 Dubai time range: ${formatTimestampDubai(startTimestamp * 1000)} to ${formatTimestampDubai(endTimestamp * 1000)}`);
     
     let allEvents = [];
     let nextStartKey = null;
     let pageCount = 0;
-    const maxPages = 200; // Increased safety limit for larger datasets
+    const maxPages = 500; // Increased for very large datasets
     
     do {
       pageCount++;
-      console.log(`📄 Fetching page ${pageCount}${nextStartKey ? ` (next_start_key: ${nextStartKey.substring(0, 20)}...)` : ''}`);
+      console.log(`📄 Fetching page ${pageCount}${nextStartKey ? ` (continuing...)` : ' (initial)'}`);
       
       const params = {
-        startDate: startTimestamp,
-        endDate: endTimestamp,
-        pageSize: 5000 // Significantly increased page size for better efficiency
+        startDate: bufferedStartTimestamp, // Use buffered range for API
+        endDate: bufferedEndTimestamp,
+        pageSize: 10000 // Maximum page size for efficiency
       };
       
-      // Add next_start_key if we have one (for subsequent pages)
       if (nextStartKey) {
         params.next_start_key = nextStartKey;
       }
@@ -192,7 +211,7 @@ async function fetchAgentEventsData(tenant, startDateTime, endDateTime, agentNam
         params,
         headers,
         httpsAgent,
-        timeout: 120000 // Increased timeout to 2 minutes for very large pages
+        timeout: 180000 // 3 minutes timeout for large requests
       });
       
       const responseData = response.data || {};
@@ -205,46 +224,112 @@ async function fetchAgentEventsData(tenant, startDateTime, endDateTime, agentNam
         console.log(`📊 Total events so far: ${allEvents.length}`);
       }
       
-      // Check for next_start_key in response for pagination
       nextStartKey = responseData.next_start_key || responseData.nextStartKey || null;
       
-      // Enhanced logging for pagination status
       if (nextStartKey) {
-        console.log(`🔄 More data available, will fetch next page...`);
+        console.log(`🔄 More data available, continuing...`);
       } else {
-        console.log(`🏁 No more pages available, pagination complete`);
+        console.log(`🏁 Pagination complete`);
       }
       
       // Safety checks
       if (pageCount >= maxPages) {
-        console.log(`⚠️ Reached maximum page limit (${maxPages}), stopping pagination`);
-        console.log(`⚠️ Consider increasing maxPages if you need more data`);
+        console.log(`⚠️ Reached maximum page limit (${maxPages}), stopping`);
         break;
       }
       
       if (events.length === 0) {
-        console.log(`📄 Page ${pageCount} returned no events, stopping pagination`);
+        console.log(`📄 Empty page received, stopping`);
         break;
       }
       
-      // Add small delay between requests to be respectful to the API
+      // Respectful delay between requests
       if (nextStartKey && pageCount > 1) {
-        console.log(`⏳ Waiting 1 second before next request...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
       
     } while (nextStartKey);
     
-    console.log(`✅ Events API Complete: ${allEvents.length} total events across ${pageCount} pages`);
-    console.log(`📈 Average events per page: ${(allEvents.length / pageCount).toFixed(0)}`);
+    console.log(`✅ API fetch complete: ${allEvents.length} total events across ${pageCount} pages`);
     
-    // Estimate coverage
-    if (durationHours > 0) {
-      const eventsPerHour = allEvents.length / durationHours;
-      console.log(`📊 Events per hour: ${eventsPerHour.toFixed(0)}`);
-    }
+    // CRITICAL: Apply strict date filtering to remove events outside the actual requested range
+    console.log(`🔍 Applying strict date filtering...`);
+    console.log(`🔍 Target range: ${formatTimestampDubai(startTimestamp * 1000)} to ${formatTimestampDubai(endTimestamp * 1000)}`);
     
-    return allEvents;
+    // DEBUG: Check first 3 events to understand timestamp format
+    console.log(`🔍 Sample raw timestamps from API:`);
+    allEvents.slice(0, 3).forEach((event, i) => {
+      console.log(`   Event ${i + 1}: Raw=${event.Timestamp} (${typeof event.Timestamp}), State=${event.state}`);
+      const parsed = parseEventTimestamp(event.Timestamp);
+      console.log(`   → Parsed to: ${parsed} (${new Date(parsed).toISOString()})`);
+      console.log(`   → Dubai time: ${formatTimestampDubai(parsed)}`);
+    });
+    
+    const filteredEvents = allEvents.filter(event => {
+      const eventTimestamp = parseEventTimestamp(event.Timestamp);
+      const eventTimestampSeconds = Math.floor(eventTimestamp / 1000);
+      const eventDubaiTime = formatTimestampDubai(eventTimestamp);
+      
+      // Extract date components for precise date validation
+      const eventDateStr = eventDubaiTime.split(',')[0].trim(); // DD/MM/YYYY
+      const startDateStr = formatTimestampDubai(startTimestamp * 1000).split(',')[0].trim();
+      const endDateStr = formatTimestampDubai(endTimestamp * 1000).split(',')[0].trim();
+      
+      // Parse dates for comparison
+      const [eventDay, eventMonth, eventYear] = eventDateStr.split('/').map(Number);
+      const [startDay, startMonth, startYear] = startDateStr.split('/').map(Number);
+      const [endDay, endMonth, endYear] = endDateStr.split('/').map(Number);
+      
+      const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      const endDate = new Date(endYear, endMonth - 1, endDay);
+      
+      // STRICT validation: Both date AND timestamp must be within range
+      const dateInRange = eventDate >= startDate && eventDate <= endDate;
+      const timestampInRange = eventTimestampSeconds >= startTimestamp && eventTimestampSeconds <= endTimestamp;
+      
+      const isValid = dateInRange && timestampInRange;
+      
+      // CRITICAL: Log events from wrong dates that are being accepted
+      if (isValid && eventDateStr !== startDateStr && eventDateStr !== endDateStr) {
+        if (eventDate < startDate || eventDate > endDate) {
+          console.log(`🚨 WRONG DATE EVENT ACCEPTED: ${event.state} from ${eventDateStr} (expected ${startDateStr}-${endDateStr})`);
+          console.log(`   Raw: ${event.Timestamp} → Parsed: ${eventTimestamp} → ${eventDubaiTime}`);
+          return false; // Force reject
+        }
+      }
+      
+      return isValid;
+    });
+    
+    console.log(`🔍 Filtering results: ${allEvents.length} → ${filteredEvents.length} events`);
+    console.log(`⚠️ Filtered out ${allEvents.length - filteredEvents.length} events outside requested range`);
+    
+    // Verify no wrong-date events made it through
+    const sampleCheck = filteredEvents.slice(0, 10);
+    sampleCheck.forEach(event => {
+      const eventTime = formatTimestampDubai(parseEventTimestamp(event.Timestamp));
+      const eventDateStr = eventTime.split(',')[0].trim();
+      const startDateStr = formatTimestampDubai(startTimestamp * 1000).split(',')[0].trim();
+      const endDateStr = formatTimestampDubai(endTimestamp * 1000).split(',')[0].trim();
+      
+      if (eventDateStr !== startDateStr && eventDateStr !== endDateStr) {
+        // Check if it's a valid multi-day range event
+        const [eventDay, eventMonth, eventYear] = eventDateStr.split('/').map(Number);
+        const [startDay, startMonth, startYear] = startDateStr.split('/').map(Number);
+        const [endDay, endMonth, endYear] = endDateStr.split('/').map(Number);
+        
+        const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+        const startDate = new Date(startYear, startMonth - 1, startDay);
+        const endDate = new Date(endYear, endMonth - 1, endDay);
+        
+        if (eventDate < startDate || eventDate > endDate) {
+          console.log(`🚨🚨 FINAL CHECK FAILED: Event from ${eventDateStr} in results when range is ${startDateStr} to ${endDateStr}`);
+        }
+      }
+    });
+    
+    return filteredEvents;
     
   } catch (error) {
     console.error('❌ Error fetching agent events:', error.message);
@@ -260,16 +345,64 @@ async function fetchAgentEventsData(tenant, startDateTime, endDateTime, agentNam
  * Process custom states for an agent from events data
  * Returns array of state blocks with start time, end time, and duration
  */
-function processCustomStatesForAgent(events, agentUsername, agentExtension) {
+function processCustomStatesForAgent(events, agentUsername, agentExtension, startDateTime = null, endDateTime = null) {
   const stateBlocks = [];
   const targetStates = ['available', 'Logoff', 'Login', 'Not Available', 'training', 'Team Meeting', 'lunch', 'Outbound', 'ON Tickets', 'Tea Break'];
   
   if (!events || !Array.isArray(events)) return stateBlocks;
   
+  // Convert date range to timestamps for filtering (if provided)
+  let startTimestamp = null;
+  let endTimestamp = null;
+  
+  if (startDateTime) {
+    startTimestamp = new Date(startDateTime).getTime();
+  }
+  if (endDateTime) {
+    endTimestamp = new Date(endDateTime).getTime();
+  }
+  
   // Filter events for this agent and sort by timestamp
-  const agentEvents = events.filter(event => 
-    event.username === agentUsername || event.ext === agentExtension
-  ).sort((a, b) => {
+  const agentEvents = events.filter(event => {
+    const matchesAgent = event.username === agentUsername || event.ext === agentExtension;
+    
+    if (!matchesAgent) return false;
+    
+    // Additional date range filtering to ensure events are within specified range
+    if (startTimestamp || endTimestamp) {
+      const eventTimestamp = parseEventTimestamp(event.Timestamp);
+      const eventDubaiTime = formatTimestampDubai(eventTimestamp);
+      
+      // Check if this is a problematic event from wrong date
+      const eventDateOnly = eventDubaiTime.split(',')[0].trim(); // Get just the date part (DD/MM/YYYY)
+      const startDateOnly = formatTimestampDubai(startTimestamp).split(',')[0].trim();
+      const endDateOnly = formatTimestampDubai(endTimestamp).split(',')[0].trim();
+      
+      // Parse dates for comparison
+      const [eventDay, eventMonth, eventYear] = eventDateOnly.split('/').map(Number);
+      const [startDay, startMonth, startYear] = startDateOnly.split('/').map(Number);
+      const [endDay, endMonth, endYear] = endDateOnly.split('/').map(Number);
+      
+      const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      const endDate = new Date(endYear, endMonth - 1, endDay);
+      
+      // First check: Date must be within the date range
+      const dateWithinRange = eventDate >= startDate && eventDate <= endDate;
+      
+      // Second check: Timestamp must be within the time range
+      const timestampWithinRange = eventTimestamp >= startTimestamp && eventTimestamp <= endTimestamp;
+      
+      // CRITICAL: Both date AND timestamp checks must pass
+      const withinRange = dateWithinRange && timestampWithinRange;
+      
+      if (!withinRange) {
+        return false;
+      }
+    }
+    
+    return true;
+  }).sort((a, b) => {
     const timestampA = parseEventTimestamp(a.Timestamp);
     const timestampB = parseEventTimestamp(b.Timestamp);
     return timestampA - timestampB;
@@ -282,14 +415,14 @@ function processCustomStatesForAgent(events, agentUsername, agentExtension) {
     
     if (targetStates.includes(currentEvent.state)) {
       const startTime = parseEventTimestamp(currentEvent.Timestamp);
-      const startTimeFormatted = formatTimeDubai(startTime);
+      const startTimeFormatted = formatTimestampDubai(startTime);
       
       let endTime, endTimeFormatted, duration;
       
       if (nextEvent) {
         endTime = parseEventTimestamp(nextEvent.Timestamp);
-        endTimeFormatted = formatTimeDubai(endTime);
-        duration = Math.round((endTime - startTime) / (1000 * 60)); // Duration in minutes
+        endTimeFormatted = formatTimestampDubai(endTime);
+        duration = Math.round((endTime - startTime) / 1000); // Duration in seconds
       } else {
         // Last event - mark as CONTINUED
         endTimeFormatted = 'CONTINUED';
@@ -329,7 +462,7 @@ function formatDuration(duration) {
 /**
  * Process simplified agent data without time slots
  */
-function processSimplifiedAgentData(statsData, eventsData, agentName = null, extension = null) {
+function processSimplifiedAgentData(statsData, eventsData, agentName = null, extension = null, startDateTime = null, endDateTime = null) {
   console.log(`📊 Processing simplified agent data...`);
   console.log(`- statsData: ${statsData?.length || 0} agents`);
   console.log(`- eventsData: ${eventsData?.length || 0} events`);
@@ -352,7 +485,7 @@ function processSimplifiedAgentData(statsData, eventsData, agentName = null, ext
       }
       
       // Process custom states from events
-      const customStates = processCustomStatesForAgent(eventsData, agentUsername, agentExtension);
+      const customStates = processCustomStatesForAgent(eventsData, agentUsername, agentExtension, startDateTime, endDateTime);
       
       // Extract call statistics from API response
       const totalCalls = agentData.total_calls || 0;
@@ -424,7 +557,7 @@ const generateSimplifiedAgentReport = async (tenant, startDateTime, endDateTime,
     ]);
     
     // Process the data
-    const processedAgents = processSimplifiedAgentData(statsData, eventsData, agentName, extension);
+    const processedAgents = processSimplifiedAgentData(statsData, eventsData, agentName, extension, startDateTime, endDateTime);
     
     // Calculate summary statistics
     const summary = {
@@ -493,7 +626,7 @@ function displaySimplifiedAgentReport(reportData) {
     
     // Display custom states
     agent.customStates.forEach(state => {
-      console.log(`   🔄 ${state.state}: ${state.startTime} to ${state.endTime} (${state.duration} minutes)`);
+      console.log(`   🔄 ${state.state}: ${state.startTime} to ${state.endTime} (${formatDuration(state.duration)} seconds)`);
     });
     console.log('');
   });
@@ -508,11 +641,18 @@ function parseEventTimestamp(timestamp) {
   } else if (typeof timestamp === 'string') {
     return new Date(timestamp).getTime();
   } else if (typeof timestamp === 'number') {
-    // Check if it's in seconds (before year 2000) or milliseconds
-    if (timestamp < 946684800000) {
-      return timestamp * 1000; // Convert seconds to milliseconds
+    // Check if timestamp is in seconds (Unix timestamp) or milliseconds
+    // Unix timestamps are typically 10 digits (seconds since 1970)
+    // Millisecond timestamps are typically 13 digits
+    
+    if (timestamp.toString().length <= 10) {
+      // This is a Unix timestamp in seconds - convert to milliseconds
+      const timestampMs = timestamp * 1000;
+      return timestampMs;
+    } else {
+      // This is already in milliseconds
+      return timestamp;
     }
-    return timestamp; // Already in milliseconds
   }
   return new Date().getTime(); // Fallback to current time
 }
